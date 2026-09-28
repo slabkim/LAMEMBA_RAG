@@ -211,3 +211,144 @@ model DocumentCriteriaMapping {
   @@unique([document_id, instrument_id])
   @@map("document_criteria_mappings")
 }
+
+// =============================================
+// Phase 4: DED Workflow
+// =============================================
+
+model DedSection {
+  id              String    @id @default(uuid()) @db.Uuid
+  project_id      String    @db.Uuid
+  instrument_id   String    @db.Uuid  // links to criteria/dimension/indicator node
+  parent_id       String?   @db.Uuid
+  code            String    @db.VarChar(50)  // e.g. "1.1.1"
+  title           String    @db.VarChar(500)
+  description     String?   @db.Text
+  level           Int       @default(0) // 0=kriteria, 1=dimensi, 2=indikator
+  sort_order      Int       @default(0)
+  status          String    @default("EMPTY") @db.VarChar(30) // EMPTY, DRAFT, SUBMITTED, IN_REVIEW, APPROVED, REVISION_REQUESTED
+  created_at      DateTime  @default(now())
+  updated_at      DateTime  @updatedAt
+
+  parent          DedSection?  @relation("DedSectionTree", fields: [parent_id], references: [id])
+  children        DedSection[] @relation("DedSectionTree")
+  responses       DedResponse[]
+
+  @@index([project_id, level])
+  @@unique([project_id, code])
+  @@map("ded_sections")
+}
+
+model DedResponse {
+  id              String    @id @default(uuid()) @db.Uuid
+  section_id      String    @db.Uuid
+  content         String    @db.Text
+  status          String    @default("DRAFT") @db.VarChar(30) // DRAFT, SUBMITTED, IN_REVIEW, APPROVED, REVISION_REQUESTED, REVISED
+  version         Int       @default(1)
+  is_ai_generated Boolean   @default(false)
+  generation_run_id String? @db.Uuid
+  created_by      String    @db.Uuid
+  submitted_at    DateTime?
+  created_at      DateTime  @default(now())
+  updated_at      DateTime  @updatedAt
+
+  section         DedSection @relation(fields: [section_id], references: [id], onDelete: Cascade)
+  versions        DedResponseVersion[]
+  evidenceRefs    DedEvidenceReference[]
+  reviews         DedReview[]
+  generationRun   AiGenerationRun? @relation(fields: [generation_run_id], references: [id])
+
+  @@index([section_id, version])
+  @@map("ded_responses")
+}
+
+model DedResponseVersion {
+  id              String    @id @default(uuid()) @db.Uuid
+  response_id     String    @db.Uuid
+  version_no      Int
+  content         String    @db.Text
+  status          String    @db.VarChar(30)
+  change_summary  String?   @db.VarChar(500)
+  created_by      String    @db.Uuid
+  created_at      DateTime  @default(now())
+
+  response        DedResponse @relation(fields: [response_id], references: [id], onDelete: Cascade)
+
+  @@index([response_id, version_no])
+  @@map("ded_response_versions")
+}
+
+model DedEvidenceReference {
+  id              String    @id @default(uuid()) @db.Uuid
+  response_id     String    @db.Uuid
+  chunk_id        String?   @db.Uuid
+  document_id     String?   @db.Uuid
+  page_number     Int?
+  quote           String?   @db.Text
+  relevance_score Float?
+  created_at      DateTime  @default(now())
+
+  response        DedResponse @relation(fields: [response_id], references: [id], onDelete: Cascade)
+
+  @@map("ded_evidence_references")
+}
+
+model AiGenerationRun {
+  id              String    @id @default(uuid()) @db.Uuid
+  section_id      String    @db.Uuid
+  project_id      String    @db.Uuid
+  status          String    @default("RUNNING") @db.VarChar(30) // RUNNING, COMPLETED, FAILED
+  model_name      String    @db.VarChar(100)
+  retrieval_method String   @db.VarChar(30) // HYBRID_RRF, SEMANTIC_ONLY, BM25_ONLY
+  retrieval_config Json?
+  top_k           Int       @default(10)
+  instruction     String?   @db.Text
+  generated_text  String?   @db.Text
+  retrieved_chunks Json?    // snapshot of retrieved chunks
+  error_message   String?   @db.Text
+  duration_ms     Int?
+  created_by      String    @db.Uuid
+  created_at      DateTime  @default(now())
+  completed_at    DateTime?
+
+  responses       DedResponse[]
+
+  @@index([section_id])
+  @@index([project_id])
+  @@map("ai_generation_runs")
+}
+
+// =============================================
+// Phase 5: Review Workflow
+// =============================================
+
+model DedReview {
+  id              String    @id @default(uuid()) @db.Uuid
+  response_id     String    @db.Uuid
+  reviewer_id     String    @db.Uuid
+  status          String    @db.VarChar(30) // APPROVED, REVISION_REQUESTED
+  overall_comment String?   @db.Text
+  created_at      DateTime  @default(now())
+  updated_at      DateTime  @updatedAt
+
+  response        DedResponse @relation(fields: [response_id], references: [id], onDelete: Cascade)
+  issues          DedReviewIssue[]
+
+  @@index([response_id])
+  @@index([reviewer_id])
+  @@map("ded_reviews")
+}
+
+model DedReviewIssue {
+  id              String    @id @default(uuid()) @db.Uuid
+  review_id       String    @db.Uuid
+  issue_text      String    @db.Text
+  status          String    @default("OPEN") @db.VarChar(30) // OPEN, RESOLVED
+  resolved_at     DateTime?
+  created_at      DateTime  @default(now())
+
+  review          DedReview @relation(fields: [review_id], references: [id], onDelete: Cascade)
+
+  @@index([review_id])
+  @@map("ded_review_issues")
+}

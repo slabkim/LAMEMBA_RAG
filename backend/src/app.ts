@@ -13,6 +13,8 @@ import projectRoutes from './modules/projects/projects.routes';
 import instrumentRoutes from './modules/instruments/instruments.routes';
 import documentRoutes from './modules/documents/documents.routes';
 import knowledgeBaseRoutes from './modules/knowledge-base/knowledge-base.routes';
+import dedRoutes from './modules/ded/ded.routes';
+import reviewRoutes from './modules/review/review.routes';
 
 export const app = express();
 
@@ -41,6 +43,12 @@ app.use('/api/instruments', instrumentRoutes);
 // Routes - Phase 3
 app.use('/api/documents', documentRoutes);
 app.use('/api/knowledge-base', knowledgeBaseRoutes);
+
+// Routes - Phase 4
+app.use('/api/ded', dedRoutes);
+
+// Routes - Phase 5
+app.use('/api/review', reviewRoutes);
 
 
 // Global Error Handler
