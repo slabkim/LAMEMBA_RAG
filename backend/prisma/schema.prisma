@@ -96,3 +96,118 @@ model Session {
   @@index([user_id, expires_at])
   @@map("sessions")
 }
+
+// =============================================
+// Phase 2: Projects & Instruments
+// =============================================
+
+model Project {
+  id              String    @id @default(uuid()) @db.Uuid
+  name            String    @db.VarChar(200)
+  code            String    @unique @db.VarChar(50)
+  description     String?   @db.Text
+  program_studi   String    @db.VarChar(200)
+  jenjang         String    @db.VarChar(20) // S1, S2, S3, D3, D4
+  accreditation   String?   @db.VarChar(20) // A, B, C, Unggul, Baik Sekali, Baik
+  status          String    @default("DRAFT") @db.VarChar(30) // DRAFT, ACTIVE, SUBMITTED, COMPLETED
+  deadline        DateTime?
+  created_by      String    @db.Uuid
+  created_at      DateTime  @default(now())
+  updated_at      DateTime  @updatedAt
+  deleted_at      DateTime?
+
+  documents       Document[]
+  instruments     Instrument[]
+
+  @@map("projects")
+}
+
+model Instrument {
+  id          String    @id @default(uuid()) @db.Uuid
+  project_id  String    @db.Uuid
+  code        String    @db.VarChar(50)
+  name        String    @db.VarChar(300)
+  parent_id   String?   @db.Uuid
+  level       Int       @default(0) // 0=kriteria, 1=sub, 2=indikator
+  sort_order  Int       @default(0)
+  description String?   @db.Text
+  created_at  DateTime  @default(now())
+  updated_at  DateTime  @updatedAt
+
+  project     Project    @relation(fields: [project_id], references: [id], onDelete: Cascade)
+  parent      Instrument? @relation("InstrumentTree", fields: [parent_id], references: [id])
+  children    Instrument[] @relation("InstrumentTree")
+  documentCriteria DocumentCriteriaMapping[]
+
+  @@unique([project_id, code])
+  @@map("instruments")
+}
+
+// =============================================
+// Phase 3: Documents & Knowledge Base
+// =============================================
+
+model Document {
+  id              String    @id @default(uuid()) @db.Uuid
+  project_id      String    @db.Uuid
+  name            String    @db.VarChar(500)
+  original_name   String    @db.VarChar(500)
+  document_type   String    @db.VarChar(30) // DED, DKPS, EVIDENCE, SUPPORTING
+  mime_type       String    @db.VarChar(100)
+  file_size       BigInt
+  file_path       String    @db.VarChar(1000)
+  status          String    @default("UPLOADED") @db.VarChar(30) // UPLOADED, PROCESSING, PROCESSED, FAILED
+  error_message   String?   @db.Text
+  page_count      Int?
+  uploaded_by     String    @db.Uuid
+  processed_at    DateTime?
+  created_at      DateTime  @default(now())
+  updated_at      DateTime  @updatedAt
+  deleted_at      DateTime?
+
+  project         Project   @relation(fields: [project_id], references: [id], onDelete: Cascade)
+  chunks          DocumentChunk[]
+  criteriaMapping DocumentCriteriaMapping[]
+
+  @@index([project_id, document_type])
+  @@index([status])
+  @@map("documents")
+}
+
+model DocumentChunk {
+  id              String    @id @default(uuid()) @db.Uuid
+  document_id     String    @db.Uuid
+  chunk_index     Int
+  content         String    @db.Text
+  page_number     Int?
+  section_title   String?   @db.VarChar(500)
+  token_count     Int       @default(0)
+  char_count      Int       @default(0)
+  embedding       Unsupported("vector(768)")?
+  bm25_tokens     String[]  @db.Text
+  metadata        Json?
+  status          String    @default("INDEXED") @db.VarChar(30) // INDEXED, NEEDS_REVIEW, FAILED
+  created_at      DateTime  @default(now())
+  updated_at      DateTime  @updatedAt
+
+  document        Document  @relation(fields: [document_id], references: [id], onDelete: Cascade)
+
+  @@index([document_id, chunk_index])
+  @@index([status])
+  @@map("document_chunks")
+}
+
+model DocumentCriteriaMapping {
+  id            String    @id @default(uuid()) @db.Uuid
+  document_id   String    @db.Uuid
+  instrument_id String    @db.Uuid
+  relevance     Float     @default(1.0) // 0.0 - 1.0, auto or manual
+  assigned_by   String?   @db.Uuid // null = auto-detected
+  created_at    DateTime  @default(now())
+
+  document      Document   @relation(fields: [document_id], references: [id], onDelete: Cascade)
+  instrument    Instrument @relation(fields: [instrument_id], references: [id], onDelete: Cascade)
+
+  @@unique([document_id, instrument_id])
+  @@map("document_criteria_mappings")
+}

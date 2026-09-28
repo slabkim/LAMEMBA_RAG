@@ -11,7 +11,8 @@ import userRoutes from './modules/users/users.routes';
 import roleRoutes from './modules/roles/roles.routes';
 import projectRoutes from './modules/projects/projects.routes';
 import instrumentRoutes from './modules/instruments/instruments.routes';
-
+import documentRoutes from './modules/documents/documents.routes';
+import knowledgeBaseRoutes from './modules/knowledge-base/knowledge-base.routes';
 
 export const app = express();
 
@@ -36,6 +37,10 @@ app.use('/api/users', userRoutes);
 app.use('/api/roles', roleRoutes);
 app.use('/api/projects', projectRoutes);
 app.use('/api/instruments', instrumentRoutes);
+
+// Routes - Phase 3
+app.use('/api/documents', documentRoutes);
+app.use('/api/knowledge-base', knowledgeBaseRoutes);
 
 
 // Global Error Handler

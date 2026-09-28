@@ -35,9 +35,8 @@ export const createUser = async (req: Request, res: Response, next: NextFunction
 
 export const disableUser = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { id } = req.params;
+    const id = req.params.id as string;
     await prisma.user.update({ where: { id }, data: { status: 'DISABLED' } });
-    // Invalidate sessions implicitly or explicitly here
     res.json({ message: 'User dinonaktifkan' });
   } catch (error) { next(error); }
 };

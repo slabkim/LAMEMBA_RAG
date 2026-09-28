@@ -3,8 +3,20 @@ import { prisma } from '../../config/database';
 
 export const getInstruments = async (req: Request, res: Response, next: NextFunction) => {
   try {
+    const { project_id } = req.query as any;
+    const where: any = {};
+    if (project_id) where.project_id = project_id;
+
     const instruments = await prisma.instrument.findMany({
-      include: { versions: { select: { id: true, version: true, status: true } } }
+      where: { ...where, parent_id: null }, // Top-level only
+      include: {
+        children: {
+          include: {
+            children: true // 2 levels deep
+          }
+        }
+      },
+      orderBy: { sort_order: 'asc' }
     });
     res.json({ data: instruments });
   } catch (error) { next(error); }
@@ -12,28 +24,26 @@ export const getInstruments = async (req: Request, res: Response, next: NextFunc
 
 export const getInstrumentTree = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { id } = req.params; // Instrument ID
-    // Dalam implementasi nyata, ini akan me-load tree secara lengkap: Version -> Criteria -> Dimensions -> Indicators
-    // Sebagai stub Phase 2:
+    const id = req.params.id as string;
     const instrument = await prisma.instrument.findUnique({
       where: { id },
       include: {
-        versions: {
+        children: {
           include: {
-            criteria: {
+            children: {
               include: {
-                dimensions: {
-                  include: {
-                    indicators: { include: { evidence_requirements: true } }
-                  }
-                }
+                children: true // 3 levels: kriteria -> sub -> indikator -> sub-indikator
               }
             }
-          }
+          },
+          orderBy: { sort_order: 'asc' }
+        },
+        documentCriteria: {
+          include: { document: { select: { id: true, name: true, document_type: true } } }
         }
       }
     });
-    
+
     if (!instrument) return res.status(404).json({ error: { message: 'Instrument not found' }});
     res.json({ data: instrument });
   } catch (error) { next(error); }
