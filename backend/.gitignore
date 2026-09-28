@@ -1,0 +1,36 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Node modules
+node_modules/
+
+# Build directory
+dist/
+build/
+
+# Testing
+coverage/
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# Prisma
+prisma/migrations/*
+!prisma/migrations/migration_lock.toml
+
+# IDEs
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+.DS_Store

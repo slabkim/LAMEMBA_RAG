@@ -1,0 +1,98 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                   String    @id @default(uuid()) @db.Uuid
+  email                String    @unique @db.VarChar(320)
+  password_hash        String?   @db.VarChar(255)
+  full_name            String    @db.VarChar(200)
+  avatar_url           String?   @db.VarChar(500)
+  status               String    @default("ACTIVE") @db.VarChar(30)
+  must_change_password Boolean   @default(true)
+  email_verified_at    DateTime?
+  last_login_at        DateTime?
+  created_at           DateTime  @default(now())
+  updated_at           DateTime  @updatedAt
+  deleted_at           DateTime?
+
+  sessions             Session[]
+  userRoles            UserRole[]
+
+  @@map("users")
+}
+
+model Role {
+  id             String    @id @default(uuid()) @db.Uuid
+  code           String    @unique @db.VarChar(50)
+  name           String    @db.VarChar(100)
+  description    String?   @db.Text
+  is_system_role Boolean   @default(false)
+  created_at     DateTime  @default(now())
+  updated_at     DateTime  @updatedAt
+
+  userRoles      UserRole[]
+  rolePermissions RolePermission[]
+
+  @@map("roles")
+}
+
+model Permission {
+  id             String    @id @default(uuid()) @db.Uuid
+  code           String    @unique @db.VarChar(100)
+  resource       String    @db.VarChar(80)
+  action         String    @db.VarChar(50)
+  description    String?   @db.Text
+  created_at     DateTime  @default(now())
+
+  rolePermissions RolePermission[]
+
+  @@map("permissions")
+}
+
+model UserRole {
+  user_id     String   @db.Uuid
+  role_id     String   @db.Uuid
+  assigned_at DateTime @default(now())
+  assigned_by String?  @db.Uuid
+
+  user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  role Role @relation(fields: [role_id], references: [id], onDelete: Cascade)
+
+  @@id([user_id, role_id])
+  @@map("user_roles")
+}
+
+model RolePermission {
+  role_id       String   @db.Uuid
+  permission_id String   @db.Uuid
+  created_at    DateTime @default(now())
+
+  role       Role       @relation(fields: [role_id], references: [id], onDelete: Cascade)
+  permission Permission @relation(fields: [permission_id], references: [id], onDelete: Cascade)
+
+  @@id([role_id, permission_id])
+  @@map("role_permissions")
+}
+
+model Session {
+  id           String    @id @default(uuid()) @db.Uuid
+  user_id      String    @db.Uuid
+  session_hash String    @unique @db.VarChar(128)
+  created_at   DateTime  @default(now())
+  expires_at   DateTime
+  last_seen_at DateTime  @default(now())
+  revoked_at   DateTime?
+  ip_hash      String?   @db.VarChar(128)
+  user_agent   String?   @db.Text
+
+  user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id, expires_at])
+  @@map("sessions")
+}

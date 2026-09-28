@@ -1,155 +1,144 @@
-import React, {useState} from "react";
-export default (props) => {
-	const [input1, onChangeInput1] = useState('');
-	const [input2, onChangeInput2] = useState('');
-	const [input3, onChangeInput3] = useState('');
-	const [input4, onChangeInput4] = useState('');
-	const [input5, onChangeInput5] = useState('');
-	return (
-		<div className="flex flex-col bg-white">
-			<div className="self-stretch bg-[#F7F9FC] overflow-hidden">
-				<div className="flex flex-col items-center self-stretch bg-[#00000040] py-[292px]">
-					<div className="flex flex-col bg-white w-[540px] p-8 gap-6 rounded-2xl" 
-						style={{
-							boxShadow: "0px 10px 24px #0000001A"
-						}}>
-						<div className="flex justify-between items-center self-stretch">
-							<div className="flex flex-col shrink-0 items-start gap-1">
-								<span className="text-[#172033] text-lg font-bold mr-[187px]" >
-									Buat Proyek Baru
-								</span>
-								<span className="text-[#667085] text-xs" >
-									Tambahkan instansi akademik baru untuk sinkronisasi RAG.
-								</span>
-							</div>
-							<img
-								src={"https://storage.googleapis.com/tagjs-prod.appspot.com/v1/hRZRl9KuH0/t6p89kjk_expires_30_days.png"} 
-								className="w-[26px] h-[26px] rounded-lg object-fill"
-							/>
-						</div>
-						<div className="flex flex-col items-start self-stretch">
-							<div className="flex flex-col items-start self-stretch mb-4 gap-1.5">
-								<div className="flex items-center gap-1.5">
-									<span className="text-[#172033] text-xs font-bold" >
-										Perguruan Tinggi / Instansi
-									</span>
-									<span className="text-red-500 text-xs" >
-										*
-									</span>
-								</div>
-								<input
-									placeholder="Contoh: Universitas Indonesia Mulia"
-									value={input1}
-									onChange={(event)=>onChangeInput1(event.target.value)}
-									className="self-stretch text-[#667085] bg-[#F7F9FC] text-[13px] py-[9px] px-3.5 rounded-lg border border-solid border-[#E4E7EC]"
-								/>
-							</div>
-							<div className="flex flex-col items-start self-stretch mb-4 gap-1.5">
-								<div className="flex items-center gap-[7px]">
-									<span className="text-[#172033] text-xs font-bold" >
-										Unit Pengelola Program Studi (UPPS)
-									</span>
-									<span className="text-red-500 text-xs" >
-										*
-									</span>
-								</div>
-								<input
-									placeholder="Contoh: Fakultas Ekonomi & Bisnis"
-									value={input2}
-									onChange={(event)=>onChangeInput2(event.target.value)}
-									className="self-stretch text-[#667085] bg-[#F7F9FC] text-[13px] py-[9px] px-3.5 rounded-lg border border-solid border-[#E4E7EC]"
-								/>
-							</div>
-							<div className="flex items-center self-stretch mb-4 gap-4">
-								<div className="flex flex-col items-start w-[230px] gap-1.5">
-									<div className="flex items-center gap-[7px]">
-										<span className="text-[#172033] text-xs font-bold" >
-											Jenis Program (PS)
-										</span>
-										<span className="text-red-500 text-xs" >
-											*
-										</span>
-									</div>
-									<input
-										placeholder="S1 / S2 / S3"
-										value={input3}
-										onChange={(event)=>onChangeInput3(event.target.value)}
-										className="self-stretch text-[#667085] bg-[#F7F9FC] text-[13px] py-[9px] px-3.5 rounded-lg border border-solid border-[#E4E7EC]"
-									/>
-								</div>
-								<div className="flex flex-col items-start w-[230px] gap-1.5">
-									<div className="flex items-center gap-1.5">
-										<span className="text-[#172033] text-xs font-bold" >
-											Tahun Akreditasi
-										</span>
-										<span className="text-red-500 text-xs" >
-											*
-										</span>
-									</div>
-									<input
-										placeholder="Contoh: 2026"
-										value={input4}
-										onChange={(event)=>onChangeInput4(event.target.value)}
-										className="self-stretch text-[#667085] bg-[#F7F9FC] text-[13px] py-[9px] px-3.5 rounded-lg border border-solid border-[#E4E7EC]"
-									/>
-								</div>
-							</div>
-							<div className="flex flex-col items-start self-stretch mb-4 gap-1.5">
-								<div className="flex items-center gap-[7px]">
-									<span className="text-[#172033] text-xs font-bold" >
-										Nama Program Studi
-									</span>
-									<span className="text-red-500 text-xs" >
-										*
-									</span>
-								</div>
-								<input
-									placeholder="Contoh: Manajemen / Kewirausahaan"
-									value={input5}
-									onChange={(event)=>onChangeInput5(event.target.value)}
-									className="self-stretch text-[#667085] bg-[#F7F9FC] text-[13px] py-[9px] px-3.5 rounded-lg border border-solid border-[#E4E7EC]"
-								/>
-							</div>
-							<div className="flex flex-col items-start self-stretch mb-[15px] gap-1.5">
-								<span className="text-[#172033] text-xs font-bold" >
-									Status Mulai
-								</span>
-								<div className="flex items-center self-stretch gap-3">
-									<button className="flex flex-col shrink-0 items-start bg-amber-100 text-left py-[7px] px-[87px] rounded-lg border border-solid border-[#F59E0B]"
-										onClick={()=>alert("Pressed!")}>
-										<span className="text-[#F59E0B] text-xs font-bold" >
-											Persiapan
-										</span>
-									</button>
-									<button className="flex flex-col shrink-0 items-start bg-[#F7F9FC] text-left py-[7px] px-[73px] rounded-lg border border-solid border-[#E4E7EC]"
-										onClick={()=>alert("Pressed!")}>
-										<span className="text-[#667085] text-xs font-bold" >
-											Aktif langsung
-										</span>
-									</button>
-								</div>
-							</div>
-							<span className="text-[#667085] text-[11px] w-[453px]" >
-								* Semua data proyek yang diinput di sini akan ditandai secara transparan sebagai mock context DEMO untuk verifikasi asisten akademik LAMEMBA.
-							</span>
-						</div>
-						<div className="flex justify-end items-center self-stretch gap-3">
-							<button className="flex flex-col shrink-0 items-start bg-white text-left py-[9px] px-4 rounded-lg border border-solid border-[#E4E7EC]"
-								onClick={()=>alert("Pressed!")}>
-								<span className="text-[#667085] text-[13px] font-bold" >
-									Batal
-								</span>
-							</button>
-							<button className="flex flex-col shrink-0 items-start bg-[#163A5F] text-left py-[9px] px-4 rounded-lg border-0"
-								onClick={()=>alert("Pressed!")}>
-								<span className="text-white text-[13px] font-bold" >
-									Buat Proyek
-								</span>
-							</button>
-						</div>
-					</div>
-				</div>
-			</div>
-		</div>
-	)
+import React, { useState } from "react";
+import { FiPlus, FiFilter, FiSearch, FiFolder, FiMoreVertical } from "react-icons/fi";
+import { Link } from "react-router-dom";
+
+export default function ProjectsList() {
+  const [showModal, setShowModal] = useState(false);
+  
+  // Dummy data for phase 2 testing
+  const projects = [
+    {
+      id: "demo-1",
+      name: "Akreditasi S1 Manajemen 2026",
+      institution: "Universitas Demo",
+      year: 2026,
+      status: "ACTIVE",
+      progress: "67%",
+      members: 4
+    }
+  ];
+
+  return (
+    <div className="flex flex-col gap-6">
+      {/* Page Header */}
+      <div className="flex items-start justify-between">
+        <div className="flex flex-col gap-1.5">
+          <span className="text-[#172033] text-[28px] font-bold">Projects</span>
+          <span className="text-[#667085] text-sm">Kelola proyek akreditasi LAMEMBA Anda di sini.</span>
+        </div>
+        <button 
+          onClick={() => setShowModal(true)}
+          className="flex items-center bg-[#163A5F] text-white py-2.5 px-4 gap-2 rounded-lg font-bold text-sm hover:bg-blue-800 transition"
+        >
+          <FiPlus /> Buat Proyek Baru
+        </button>
+      </div>
+
+      {/* Filters & Search */}
+      <div className="bg-white border border-[#E4E7EC] rounded-lg p-4 flex justify-between items-center">
+        <div className="flex gap-3">
+          <div className="relative w-64">
+            <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+            <input 
+              type="text" 
+              placeholder="Cari nama proyek..." 
+              className="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+          <button className="flex items-center gap-2 px-4 py-2 border border-gray-200 rounded-lg text-sm text-gray-700 hover:bg-gray-50">
+            <FiFilter /> Filter
+          </button>
+        </div>
+      </div>
+
+      {/* Projects Grid */}
+      <div className="grid grid-cols-3 gap-6">
+        {projects.map((project) => (
+          <div key={project.id} className="bg-white border border-[#E4E7EC] rounded-lg p-5 hover:shadow-sm transition">
+            <div className="flex justify-between items-start mb-4">
+              <div className="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center text-blue-600">
+                <FiFolder size={20} />
+              </div>
+              <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full ${project.status === 'ACTIVE' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'}`}>
+                {project.status}
+              </span>
+            </div>
+            
+            <Link to={`/projects/${project.id}`} className="block group">
+              <h3 className="text-lg font-bold text-[#172033] group-hover:text-blue-600 transition mb-1 line-clamp-2">
+                {project.name}
+              </h3>
+              <p className="text-sm text-gray-500 mb-4">{project.institution} · {project.year}</p>
+            </Link>
+
+            <div className="pt-4 border-t border-gray-100 flex items-center justify-between">
+              <div className="flex flex-col gap-1 w-24">
+                <span className="text-[10px] text-gray-500 font-medium uppercase">DED Progress</span>
+                <span className="text-sm font-bold text-[#172033]">{project.progress}</span>
+              </div>
+              <div className="flex flex-col gap-1 items-end">
+                <span className="text-[10px] text-gray-500 font-medium uppercase">Tim</span>
+                <span className="text-sm font-bold text-[#172033]">{project.members} Anggota</span>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Simple Create Project Modal */}
+      {showModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl w-[500px] overflow-hidden shadow-2xl">
+            <div className="p-6 border-b border-gray-100">
+              <h2 className="text-xl font-bold text-[#172033]">Buat Proyek Baru</h2>
+              <p className="text-sm text-gray-500 mt-1">Inisialisasi workspace akreditasi LAMEMBA baru.</p>
+            </div>
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Nama Proyek</label>
+                <input type="text" className="w-full border border-gray-300 rounded-md py-2 px-3 focus:outline-none focus:border-blue-500" placeholder="Contoh: Akreditasi S1 Manajemen 2026" />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Tahun Akreditasi</label>
+                  <input type="number" defaultValue="2026" className="w-full border border-gray-300 rounded-md py-2 px-3 focus:outline-none focus:border-blue-500" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Instrumen</label>
+                  <select className="w-full border border-gray-300 rounded-md py-2 px-3 focus:outline-none focus:border-blue-500 bg-white">
+                    <option>LAMEMBA v2024</option>
+                  </select>
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Institusi / Perguruan Tinggi</label>
+                <input type="text" className="w-full border border-gray-300 rounded-md py-2 px-3 focus:outline-none focus:border-blue-500" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Status Awal</label>
+                <select className="w-full border border-gray-300 rounded-md py-2 px-3 focus:outline-none focus:border-blue-500 bg-white">
+                  <option>Persiapan (Planning)</option>
+                  <option>Aktif</option>
+                </select>
+              </div>
+            </div>
+            <div className="p-6 bg-gray-50 flex justify-end gap-3 border-t border-gray-100">
+              <button 
+                onClick={() => setShowModal(false)}
+                className="px-4 py-2 border border-gray-300 text-gray-700 rounded-md font-medium hover:bg-white transition"
+              >
+                Batal
+              </button>
+              <button 
+                onClick={() => setShowModal(false)}
+                className="px-4 py-2 bg-[#163A5F] text-white rounded-md font-medium hover:bg-blue-800 transition"
+              >
+                Buat Proyek
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
 }
