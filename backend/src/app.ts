@@ -15,6 +15,11 @@ import documentRoutes from './modules/documents/documents.routes';
 import knowledgeBaseRoutes from './modules/knowledge-base/knowledge-base.routes';
 import dedRoutes from './modules/ded/ded.routes';
 import reviewRoutes from './modules/review/review.routes';
+import researchRoutes from './modules/research/research.routes';
+import notificationRoutes from './modules/system/notifications.routes';
+import auditRoutes from './modules/system/audit.routes';
+import settingsRoutes from './modules/system/settings.routes';
+import dedStructureRoutes from './modules/system/ded-structure.routes';
 
 export const app = express();
 
@@ -49,6 +54,15 @@ app.use('/api/ded', dedRoutes);
 
 // Routes - Phase 5
 app.use('/api/review', reviewRoutes);
+
+// Routes - Phase 6
+app.use('/api/research', researchRoutes);
+
+// Routes - Phase 7
+app.use('/api/notifications', notificationRoutes);
+app.use('/api/audit-logs', auditRoutes);
+app.use('/api/settings', settingsRoutes);
+app.use('/api/ded-structure', dedStructureRoutes);
 
 
 // Global Error Handler

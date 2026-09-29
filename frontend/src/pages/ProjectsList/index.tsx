@@ -1,25 +1,55 @@
-import React, { useState } from "react";
-import { FiPlus, FiFilter, FiSearch, FiFolder, FiMoreVertical } from "react-icons/fi";
+import React, { useState, useEffect } from "react";
+import { FiPlus, FiFilter, FiSearch, FiFolder } from "react-icons/fi";
 import { Link } from "react-router-dom";
+import { fetchAPI } from "../../lib/api";
 
 export default function ProjectsList() {
   const [showModal, setShowModal] = useState(false);
+  const [projects, setProjects] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
   
-  // Dummy data for phase 2 testing
-  const projects = [
-    {
-      id: "demo-1",
-      name: "Akreditasi S1 Manajemen 2026",
-      institution: "Universitas Demo",
-      year: 2026,
-      status: "ACTIVE",
-      progress: "67%",
-      members: 4
+  // Form state
+  const [name, setName] = useState('');
+  const [code, setCode] = useState('');
+  const [program_studi, setProgramStudi] = useState('');
+  const [jenjang, setJenjang] = useState('S1');
+
+  const loadProjects = async () => {
+    try {
+      setLoading(true);
+      const res = await fetchAPI('/projects');
+      setProjects(res.data);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
     }
-  ];
+  };
+
+  useEffect(() => {
+    loadProjects();
+  }, []);
+
+  const handleCreate = async () => {
+    try {
+      await fetchAPI('/projects', {
+        method: 'POST',
+        body: JSON.stringify({
+          name,
+          code,
+          program_studi,
+          jenjang
+        })
+      });
+      setShowModal(false);
+      loadProjects();
+    } catch (err: any) {
+      alert(err.message);
+    }
+  };
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-6 p-6">
       {/* Page Header */}
       <div className="flex items-start justify-between">
         <div className="flex flex-col gap-1.5">
@@ -35,7 +65,7 @@ export default function ProjectsList() {
       </div>
 
       {/* Filters & Search */}
-      <div className="bg-white border border-[#E4E7EC] rounded-lg p-4 flex justify-between items-center">
+      <div className="bg-white border border-[#E4E7EC] rounded-lg p-4 flex justify-between items-center shadow-sm">
         <div className="flex gap-3">
           <div className="relative w-64">
             <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
@@ -52,38 +82,49 @@ export default function ProjectsList() {
       </div>
 
       {/* Projects Grid */}
-      <div className="grid grid-cols-3 gap-6">
-        {projects.map((project) => (
-          <div key={project.id} className="bg-white border border-[#E4E7EC] rounded-lg p-5 hover:shadow-sm transition">
-            <div className="flex justify-between items-start mb-4">
-              <div className="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center text-blue-600">
-                <FiFolder size={20} />
+      {loading ? (
+        <div className="text-gray-500">Memuat proyek...</div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {projects.map((project) => (
+            <div key={project.id} className="bg-white border border-[#E4E7EC] rounded-xl p-5 hover:shadow-md transition shadow-sm flex flex-col justify-between">
+              <div>
+                <div className="flex justify-between items-start mb-4">
+                  <div className="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center text-blue-600">
+                    <FiFolder size={20} />
+                  </div>
+                  <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full ${project.status === 'ACTIVE' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'}`}>
+                    {project.status}
+                  </span>
+                </div>
+                
+                <Link to={`/projects/${project.id}`} className="block group">
+                  <h3 className="text-lg font-bold text-[#172033] group-hover:text-blue-600 transition mb-1 line-clamp-2">
+                    {project.name}
+                  </h3>
+                  <p className="text-sm text-gray-500 mb-4">{project.program_studi} · {project.jenjang}</p>
+                </Link>
               </div>
-              <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full ${project.status === 'ACTIVE' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'}`}>
-                {project.status}
-              </span>
-            </div>
-            
-            <Link to={`/projects/${project.id}`} className="block group">
-              <h3 className="text-lg font-bold text-[#172033] group-hover:text-blue-600 transition mb-1 line-clamp-2">
-                {project.name}
-              </h3>
-              <p className="text-sm text-gray-500 mb-4">{project.institution} · {project.year}</p>
-            </Link>
 
-            <div className="pt-4 border-t border-gray-100 flex items-center justify-between">
-              <div className="flex flex-col gap-1 w-24">
-                <span className="text-[10px] text-gray-500 font-medium uppercase">DED Progress</span>
-                <span className="text-sm font-bold text-[#172033]">{project.progress}</span>
-              </div>
-              <div className="flex flex-col gap-1 items-end">
-                <span className="text-[10px] text-gray-500 font-medium uppercase">Tim</span>
-                <span className="text-sm font-bold text-[#172033]">{project.members} Anggota</span>
+              <div className="pt-4 border-t border-gray-100 flex items-center justify-between">
+                <div className="flex flex-col gap-1">
+                  <span className="text-[10px] text-gray-500 font-medium uppercase">Total Dokumen</span>
+                  <span className="text-sm font-bold text-[#172033]">{project.document_count || 0}</span>
+                </div>
+                <div className="flex flex-col gap-1 items-end">
+                  <span className="text-[10px] text-gray-500 font-medium uppercase">Tim</span>
+                  <span className="text-sm font-bold text-[#172033]">{project.members || 1} Anggota</span>
+                </div>
               </div>
             </div>
-          </div>
-        ))}
-      </div>
+          ))}
+          {projects.length === 0 && (
+             <div className="col-span-3 text-center py-10 text-gray-500">
+               Belum ada proyek. Silakan buat proyek baru.
+             </div>
+          )}
+        </div>
+      )}
 
       {/* Simple Create Project Modal */}
       {showModal && (
@@ -96,30 +137,27 @@ export default function ProjectsList() {
             <div className="p-6 space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Nama Proyek</label>
-                <input type="text" className="w-full border border-gray-300 rounded-md py-2 px-3 focus:outline-none focus:border-blue-500" placeholder="Contoh: Akreditasi S1 Manajemen 2026" />
+                <input type="text" value={name} onChange={e=>setName(e.target.value)} className="w-full border border-gray-300 rounded-md py-2 px-3 focus:outline-none focus:border-blue-500" placeholder="Contoh: Akreditasi S1 Manajemen 2026" />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Tahun Akreditasi</label>
-                  <input type="number" defaultValue="2026" className="w-full border border-gray-300 rounded-md py-2 px-3 focus:outline-none focus:border-blue-500" />
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Kode Proyek</label>
+                  <input type="text" value={code} onChange={e=>setCode(e.target.value)} placeholder="MGT-2026" className="w-full border border-gray-300 rounded-md py-2 px-3 focus:outline-none focus:border-blue-500" />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Instrumen</label>
-                  <select className="w-full border border-gray-300 rounded-md py-2 px-3 focus:outline-none focus:border-blue-500 bg-white">
-                    <option>LAMEMBA v2024</option>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Jenjang</label>
+                  <select value={jenjang} onChange={e=>setJenjang(e.target.value)} className="w-full border border-gray-300 rounded-md py-2 px-3 focus:outline-none focus:border-blue-500 bg-white">
+                    <option value="D3">D3</option>
+                    <option value="D4">D4</option>
+                    <option value="S1">S1</option>
+                    <option value="S2">S2</option>
+                    <option value="S3">S3</option>
                   </select>
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Institusi / Perguruan Tinggi</label>
-                <input type="text" className="w-full border border-gray-300 rounded-md py-2 px-3 focus:outline-none focus:border-blue-500" />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Status Awal</label>
-                <select className="w-full border border-gray-300 rounded-md py-2 px-3 focus:outline-none focus:border-blue-500 bg-white">
-                  <option>Persiapan (Planning)</option>
-                  <option>Aktif</option>
-                </select>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Program Studi</label>
+                <input type="text" value={program_studi} onChange={e=>setProgramStudi(e.target.value)} placeholder="Contoh: Manajemen" className="w-full border border-gray-300 rounded-md py-2 px-3 focus:outline-none focus:border-blue-500" />
               </div>
             </div>
             <div className="p-6 bg-gray-50 flex justify-end gap-3 border-t border-gray-100">
@@ -130,8 +168,9 @@ export default function ProjectsList() {
                 Batal
               </button>
               <button 
-                onClick={() => setShowModal(false)}
-                className="px-4 py-2 bg-[#163A5F] text-white rounded-md font-medium hover:bg-blue-800 transition"
+                onClick={handleCreate}
+                disabled={!name || !code || !program_studi}
+                className="px-4 py-2 bg-[#163A5F] text-white rounded-md font-medium hover:bg-blue-800 transition disabled:opacity-50"
               >
                 Buat Proyek
               </button>

@@ -1,10 +1,12 @@
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"]
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider   = "postgresql"
+  url        = env("DATABASE_URL")
+  extensions = [vector]
 }
 
 model User {
@@ -23,6 +25,9 @@ model User {
 
   sessions             Session[]
   userRoles            UserRole[]
+  notifications        Notification[]
+  notificationPrefs    UserNotificationPreference[]
+  auditLogs            AuditLog[]
 
   @@map("users")
 }
@@ -351,4 +356,204 @@ model DedReviewIssue {
 
   @@index([review_id])
   @@map("ded_review_issues")
+}
+
+// =============================================
+// Phase 6: Research Workflow
+// =============================================
+
+model Dataset {
+  id              String    @id @default(uuid()) @db.Uuid
+  name            String    @db.VarChar(200)
+  description     String?   @db.Text
+  status          String    @default("DRAFT") @db.VarChar(30) // DRAFT, REVIEW, READY, ARCHIVED
+  created_by      String    @db.Uuid
+  created_at      DateTime  @default(now())
+  updated_at      DateTime  @updatedAt
+
+  testCases       DatasetTestCase[]
+  experiments     Experiment[]
+
+  @@map("datasets")
+}
+
+model DatasetTestCase {
+  id              String    @id @default(uuid()) @db.Uuid
+  dataset_id      String    @db.Uuid
+  question        String    @db.Text
+  expected_answer String    @db.Text
+  criteria_id     String?   @db.Uuid
+  dimension_id    String?   @db.Uuid
+  indicator_id    String?   @db.Uuid
+  evidence_refs   Json?
+  status          String    @default("DRAFT") @db.VarChar(30) // DRAFT, NEEDS_REVIEW, READY
+  created_at      DateTime  @default(now())
+  updated_at      DateTime  @updatedAt
+
+  dataset         Dataset   @relation(fields: [dataset_id], references: [id], onDelete: Cascade)
+  results         ExperimentTestCaseResult[]
+
+  @@index([dataset_id])
+  @@map("dataset_test_cases")
+}
+
+model Experiment {
+  id              String    @id @default(uuid()) @db.Uuid
+  name            String    @db.VarChar(200)
+  dataset_id      String    @db.Uuid
+  method          String    @db.VarChar(50) // LLM_ONLY, SEMANTIC_RAG, HYBRID_RAG
+  model_name      String    @db.VarChar(100)
+  evidence_first  Boolean   @default(true)
+  retrieval_config Json?
+  status          String    @default("DRAFT") @db.VarChar(30) // DRAFT, QUEUED, RUNNING, COMPLETED, FAILED, CANCELLED
+  created_by      String    @db.Uuid
+  created_at      DateTime  @default(now())
+  updated_at      DateTime  @updatedAt
+
+  dataset         Dataset   @relation(fields: [dataset_id], references: [id], onDelete: Cascade)
+  runs            ExperimentRun[]
+
+  @@map("experiments")
+}
+
+model ExperimentRun {
+  id              String    @id @default(uuid()) @db.Uuid
+  experiment_id   String    @db.Uuid
+  status          String    @default("QUEUED") @db.VarChar(30)
+  started_at      DateTime?
+  completed_at    DateTime?
+  error_message   String?   @db.Text
+
+  experiment      Experiment @relation(fields: [experiment_id], references: [id], onDelete: Cascade)
+  results         ExperimentTestCaseResult[]
+  metrics         ExperimentMetric[]
+
+  @@index([experiment_id])
+  @@map("experiment_runs")
+}
+
+model ExperimentTestCaseResult {
+  id                  String    @id @default(uuid()) @db.Uuid
+  run_id              String    @db.Uuid
+  test_case_id        String    @db.Uuid
+  generated_answer    String?   @db.Text
+  retrieved_chunk_ids String[]  @db.Uuid
+  retrieval_scores    Json?
+  context_text        String?   @db.Text
+  faithfulness        Decimal?  @db.Decimal(8,6)
+  answer_relevancy    Decimal?  @db.Decimal(8,6)
+  context_precision   Decimal?  @db.Decimal(8,6)
+  context_recall      Decimal?  @db.Decimal(8,6)
+  duration_ms         Int?
+  error_message       String?   @db.Text
+  created_at          DateTime  @default(now())
+
+  run                 ExperimentRun   @relation(fields: [run_id], references: [id], onDelete: Cascade)
+  testCase            DatasetTestCase @relation(fields: [test_case_id], references: [id], onDelete: Cascade)
+
+  @@unique([run_id, test_case_id])
+  @@map("experiment_test_case_results")
+}
+
+model ExperimentMetric {
+  id              String    @id @default(uuid()) @db.Uuid
+  run_id          String    @db.Uuid
+  metric_name     String    @db.VarChar(50) // FAITHFULNESS, ANSWER_RELEVANCY, etc.
+  mean_score      Decimal   @db.Decimal(8,6)
+  median_score    Decimal   @db.Decimal(8,6)
+  std_dev         Decimal   @db.Decimal(8,6)
+  created_at      DateTime  @default(now())
+
+  run             ExperimentRun @relation(fields: [run_id], references: [id], onDelete: Cascade)
+
+  @@index([run_id])
+  @@map("experiment_metrics")
+}
+
+// =============================================
+// Phase 7: System & Polish
+// =============================================
+
+model Notification {
+  id              String    @id @default(uuid()) @db.Uuid
+  user_id         String    @db.Uuid
+  type            String    @db.VarChar(50)
+  title           String    @db.VarChar(200)
+  message         String    @db.Text
+  link            String?   @db.VarChar(500)
+  priority        String    @default("NORMAL") @db.VarChar(20) // NORMAL, HIGH
+  is_read         Boolean   @default(false)
+  read_at         DateTime?
+  created_at      DateTime  @default(now())
+
+  user            User      @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id, is_read, created_at])
+  @@map("notifications")
+}
+
+model UserNotificationPreference {
+  id                String    @id @default(uuid()) @db.Uuid
+  user_id           String    @db.Uuid
+  notification_type String    @db.VarChar(80)
+  in_app_enabled    Boolean   @default(true)
+  email_enabled     Boolean   @default(false)
+  created_at        DateTime  @default(now())
+  updated_at        DateTime  @updatedAt
+
+  user              User      @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@unique([user_id, notification_type])
+  @@map("user_notification_preferences")
+}
+
+model AuditLog {
+  id              String    @id @default(uuid()) @db.Uuid
+  user_id         String?   @db.Uuid
+  action          String    @db.VarChar(100)
+  resource_type   String    @db.VarChar(50)
+  resource_id     String?   @db.VarChar(100)
+  details         Json?
+  ip_address      String?   @db.VarChar(50)
+  created_at      DateTime  @default(now())
+
+  user            User?     @relation(fields: [user_id], references: [id], onDelete: SetNull)
+
+  @@index([action])
+  @@index([resource_type, resource_id])
+  @@index([created_at])
+  @@map("audit_logs")
+}
+
+model DedStructureTemplate {
+  id                    String    @id @default(uuid()) @db.Uuid
+  instrument_version_id String    @db.Uuid // NOTE: Linking as string instead of relation since InstrumentVersion model might be absorbed in Instrument tree, depending on Phase 2 impl. If not defined, we'll leave as String.
+  parent_id             String?   @db.Uuid
+  code                  String    @db.VarChar(100)
+  title                 String    @db.VarChar(500)
+  section_type          String    @db.VarChar(50) // COVER, INTRO, CRITERION, APPENDIX, OTHER
+  description           String?   @db.Text
+  criterion_mapping     String?   @db.VarChar(50)
+  display_order         Int
+  is_required           Boolean   @default(true)
+  created_at            DateTime  @default(now())
+  updated_at            DateTime  @updatedAt
+
+  parent                DedStructureTemplate?  @relation("DedTemplateTree", fields: [parent_id], references: [id])
+  children              DedStructureTemplate[] @relation("DedTemplateTree")
+
+  @@unique([instrument_version_id, code])
+  @@index([instrument_version_id, display_order])
+  @@map("ded_structure_templates")
+}
+
+model SystemSetting {
+  id              String    @id @default(uuid()) @db.Uuid
+  key             String    @unique @db.VarChar(100)
+  value           String    @db.Text
+  description     String?   @db.Text
+  updated_by      String?   @db.Uuid
+  updated_at      DateTime  @updatedAt
+
+  @@map("system_settings")
 }

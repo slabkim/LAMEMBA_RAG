@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { fetchAPI } from '../lib/api';
 
 type User = {
   id: string;
@@ -24,16 +25,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Phase 1 Stub: check current user on load
     const checkAuth = async () => {
       try {
-        const res = await fetch('http://localhost:4000/api/auth/me', {
-          // withCredentials: true
-        });
-        if (res.ok) {
-          const data = await res.json();
-          setUser(data.user);
-        }
+        const data = await fetchAPI('/auth/me');
+        setUser(data.user);
       } catch (error) {
         console.error('Failed to check auth', error);
       } finally {

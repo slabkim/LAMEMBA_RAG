@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
+import { fetchAPI } from '../../lib/api';
 import { FiMail, FiLock } from 'react-icons/fi';
 
 export default function Login() {
@@ -21,19 +22,10 @@ export default function Login() {
     setIsLoading(true);
 
     try {
-      const res = await fetch('http://localhost:4000/api/auth/login', {
+      const data = await fetchAPI('/auth/login', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
-        // credentials: 'omit' // use 'include' when cross-origin cookies are fully set up
+        body: JSON.stringify({ email, password })
       });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        throw new Error(data.error?.message || 'Login gagal');
-      }
-
       login(data.user);
       navigate(from, { replace: true });
     } catch (err: any) {
@@ -45,7 +37,6 @@ export default function Login() {
 
   return (
     <div className="min-h-screen flex bg-gray-50">
-      {/* Left Panel */}
       <div className="hidden lg:flex w-1/2 bg-[#163A5F] text-white p-12 flex-col justify-between">
         <div>
           <div className="flex items-center gap-2 mb-12">
@@ -61,21 +52,17 @@ export default function Login() {
           &copy; 2026 AI DED LAMEMBA Project.
         </div>
       </div>
-
-      {/* Right Panel */}
       <div className="w-full lg:w-1/2 flex items-center justify-center p-8">
         <div className="max-w-md w-full">
           <div className="mb-8">
             <h2 className="text-3xl font-bold text-[#172033] mb-2">Selamat Datang</h2>
             <p className="text-[#667085]">Masuk ke akun Anda untuk mengakses workspace.</p>
           </div>
-
           {error && (
             <div className="bg-amber-100 border border-amber-300 text-amber-800 p-3 rounded mb-6 text-sm">
               {error}
             </div>
           )}
-
           <form onSubmit={handleSubmit} className="space-y-5">
             <div>
               <label className="block text-sm font-medium text-[#172033] mb-1">Email</label>
@@ -87,13 +74,12 @@ export default function Login() {
                   type="email"
                   required
                   className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="admin@lamemba.dev"
+                  placeholder="admin@lamemba.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                 />
               </div>
             </div>
-
             <div>
               <div className="flex justify-between items-center mb-1">
                 <label className="block text-sm font-medium text-[#172033]">Password</label>
@@ -113,7 +99,6 @@ export default function Login() {
                 />
               </div>
             </div>
-
             <button
               type="submit"
               disabled={isLoading}
@@ -122,15 +107,10 @@ export default function Login() {
               {isLoading ? 'Sedang masuk...' : 'Masuk'}
             </button>
           </form>
-
-          {/* Development Help */}
           <div className="mt-8 p-4 bg-gray-100 rounded text-xs text-gray-500">
             <strong>Dev Accounts:</strong><br/>
-            Admin: admin@lamemba.dev<br/>
-            Penyusun: penyusun@lamemba.dev<br/>
-            Reviewer: reviewer@lamemba.dev<br/>
-            Researcher: researcher@lamemba.dev<br/>
-            PW: (role)123
+            Admin: admin@lamemba.com<br/>
+            PW: admin123
           </div>
         </div>
       </div>
