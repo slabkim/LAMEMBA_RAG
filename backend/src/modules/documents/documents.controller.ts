@@ -52,30 +52,45 @@ export const listDocuments = async (req: Request, res: Response, next: NextFunct
 export const uploadDocument = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { name, document_type, project_id, criteria_ids } = req.body;
-    const userId = (req as any).user?.id || 'system';
+    const userId = (req as any).user?.id;
+    const file = req.file;
+
+    if (!file) {
+      throw new AppError(400, 'BAD_REQUEST', 'File tidak ditemukan (multipart/form-data required)');
+    }
 
     const document = await prisma.document.create({
       data: {
-        name,
-        original_name: name,
-        document_type,
+        name: name || file.originalname,
+        original_name: file.originalname,
+        document_type: document_type || 'SUPPORTING',
         project_id,
         status: 'UPLOADED',
         uploaded_by: userId,
-        file_path: `/uploads/${project_id}/${name}`,
-        file_size: 0,
-        mime_type: 'application/pdf',
+        file_path: file.path,
+        file_size: file.size,
+        mime_type: file.mimetype,
       }
     });
 
     // Create criteria mappings if provided
-    if (criteria_ids?.length) {
-      await prisma.documentCriteriaMapping.createMany({
-        data: criteria_ids.map((instrumentId: string) => ({
-          document_id: document.id,
-          instrument_id: instrumentId,
-        }))
-      });
+    if (criteria_ids) {
+      // It can be a string (if single) or array of strings or JSON
+      let cIds = [];
+      try {
+         cIds = JSON.parse(criteria_ids);
+      } catch (e) {
+         cIds = Array.isArray(criteria_ids) ? criteria_ids : [criteria_ids];
+      }
+      
+      if (Array.isArray(cIds) && cIds.length > 0) {
+        await prisma.documentCriteriaMapping.createMany({
+          data: cIds.map((instrumentId: string) => ({
+            document_id: document.id,
+            instrument_id: instrumentId,
+          }))
+        });
+      }
     }
 
     res.status(201).json({ data: document });
@@ -103,6 +118,8 @@ export const getDocumentDetail = async (req: Request, res: Response, next: NextF
   } catch (error) { next(error); }
 };
 
+import { processDocumentRAG } from './rag.service';
+
 // POST /api/documents/:id/process - Trigger document processing pipeline
 export const triggerProcessing = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -110,13 +127,15 @@ export const triggerProcessing = async (req: Request, res: Response, next: NextF
     const document = await prisma.document.findUnique({ where: { id } });
     if (!document) throw new AppError(404, 'NOT_FOUND', 'Document not found');
 
-    // Phase 3 stub: Mark as PROCESSING.
-    // In Phase 4+, this will dispatch to BullMQ job queue for:
-    //   1. Text extraction  2. Clean & normalization  3. Chunking
-    //   4. Vector embedding  5. BM25 index  6. Ready for Hybrid RAG
+    // Update status menjadi PROCESSING
     await prisma.document.update({
       where: { id },
       data: { status: 'PROCESSING' }
+    });
+
+    // Fire and forget - jalankan pipeline RAG di background
+    processDocumentRAG(id).catch(err => {
+      console.error("Background RAG Processing Failed:", err);
     });
 
     res.json({ message: 'Processing pipeline triggered', document_id: id });

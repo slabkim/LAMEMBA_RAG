@@ -1,13 +1,19 @@
 export const fetchAPI = async (endpoint: string, options: RequestInit = {}) => {
   const url = `http://localhost:3000/api${endpoint}`;
   
+  const headers: Record<string, string> = {
+    ...(options.headers as Record<string, string> || {}),
+  };
+
+  // Hanya set Content-Type ke application/json jika body BUKAN FormData
+  if (!(options.body instanceof FormData) && !headers['Content-Type']) {
+    headers['Content-Type'] = 'application/json';
+  }
+
   const response = await fetch(url, {
     ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      ...(options.headers || {}),
-    },
-    credentials: 'include', // Send cookies cross-origin
+    headers,
+    credentials: 'include',
   });
 
   const data = await response.json();

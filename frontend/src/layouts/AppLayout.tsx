@@ -24,6 +24,10 @@ export default function AppLayout() {
   const showResearch = isAdmin || isResearcher;
   const showSystem = isAdmin;
 
+  // Extract project ID if we are inside a project workspace
+  const projectMatch = location.pathname.match(/^\/projects\/([a-f0-9-]+)/i);
+  const activeProjectId = projectMatch ? projectMatch[1] : null;
+
   return (
     <div className="flex h-screen bg-[#F7F9FC] overflow-hidden text-[#172033]">
       {/* SIDEBAR */}
@@ -37,16 +41,6 @@ export default function AppLayout() {
               <span className="text-[#667085] text-[10px] font-bold">AI DOC GENERATOR</span>
             </div>
           </div>
-
-          {/* Active Workspace Card */}
-          <div className="bg-[#F7F9FC] p-3 rounded-lg border border-[#E4E7EC] mb-5">
-            <span className="text-[#667085] text-[9px] font-bold">AKTIF WORKSPACE</span>
-            <div className="text-[#172033] text-xs font-bold mt-1">S1 Manajemen 2026</div>
-            <div className="flex items-center gap-1 mt-1">
-              <div className="w-1.5 h-1.5 rounded-full bg-blue-500"></div>
-              <span className="text-[#667085] text-[10px]">DEMO Mode</span>
-            </div>
-          </div>
         </div>
 
         {/* Navigation Groups */}
@@ -56,10 +50,16 @@ export default function AppLayout() {
             <div className="flex flex-col gap-1">
               <span className="text-[#667085] text-[11px] font-bold mb-1 px-2">Workspace</span>
               <NavItem to="/dashboard" icon={<FiHome />} label="Dashboard" active={isActive('/dashboard')} />
-              {(isAdmin || isPenyusun) && <NavItem to="/projects" icon={<FiFolder />} label={isPenyusun && !isAdmin ? "My Projects" : "Projects"} active={isActive('/projects')} />}
-              <NavItem to="/projects/demo/documents" icon={<FiFileText />} label="Documents" active={isActive('/projects/demo/documents')} />
-              <NavItem to="/projects/demo/knowledge-base" icon={<FiDatabase />} label="Knowledge Base" active={isActive('/projects/demo/knowledge-base')} />
-              <NavItem to="/projects/demo/ded" icon={<FiBookOpen />} label="DED Overview" active={isActive('/projects/demo/ded')} />
+              {(isAdmin || isPenyusun) && <NavItem to="/projects" icon={<FiFolder />} label={isPenyusun && !isAdmin ? "My Projects" : "Projects"} active={isActive('/projects') && !activeProjectId} /> }
+              
+              {activeProjectId && (
+                <div className="ml-2 pl-2 border-l-2 border-blue-100 mt-2 flex flex-col gap-1">
+                  <NavItem to={`/projects/${activeProjectId}`} icon={<FiBookOpen />} label="Project Detail" active={location.pathname === `/projects/${activeProjectId}`} />
+                  <NavItem to={`/projects/${activeProjectId}/documents`} icon={<FiFileText />} label="Documents" active={isActive(`/projects/${activeProjectId}/documents`)} />
+                  <NavItem to={`/projects/${activeProjectId}/knowledge-base`} icon={<FiDatabase />} label="Knowledge Base" active={isActive(`/projects/${activeProjectId}/knowledge-base`)} />
+                  <NavItem to={`/projects/${activeProjectId}/ded`} icon={<FiCheckSquare />} label="DED Overview" active={isActive(`/projects/${activeProjectId}/ded`)} />
+                </div>
+              )}
             </div>
           )}
 
@@ -85,6 +85,7 @@ export default function AppLayout() {
             <div className="flex flex-col gap-1">
               <span className="text-[#667085] text-[11px] font-bold mb-1 px-2">System</span>
               <NavItem to="/system/users" icon={<FiUsers />} label="Users & Access" active={isActive('/system/users')} />
+              <NavItem to="/system/ded-structure" icon={<FiList />} label="Instrumen LAMEMBA" active={isActive('/system/ded-structure')} />
               <NavItem to="/system/settings" icon={<FiSettings />} label="Settings" active={isActive('/system/settings')} />
             </div>
           )}

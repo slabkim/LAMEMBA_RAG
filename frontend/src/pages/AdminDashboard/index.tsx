@@ -11,7 +11,7 @@ export default function AdminDashboard() {
     const loadDashboard = async () => {
       try {
         const result = await fetchAPI('/dashboard');
-        setData(result.data);
+        setData(result);
       } catch (err) {
         console.error(err);
       } finally {

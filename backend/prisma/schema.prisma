@@ -103,49 +103,91 @@ model Session {
 }
 
 // =============================================
-// Phase 2: Projects & Instruments
+// Phase 2: Projects & Instruments (Dynamic Versioning)
 // =============================================
 
-model Project {
-  id              String    @id @default(uuid()) @db.Uuid
-  name            String    @db.VarChar(200)
-  code            String    @unique @db.VarChar(50)
-  description     String?   @db.Text
-  program_studi   String    @db.VarChar(200)
-  jenjang         String    @db.VarChar(20) // S1, S2, S3, D3, D4
-  accreditation   String?   @db.VarChar(20) // A, B, C, Unggul, Baik Sekali, Baik
-  status          String    @default("DRAFT") @db.VarChar(30) // DRAFT, ACTIVE, SUBMITTED, COMPLETED
-  deadline        DateTime?
-  created_by      String    @db.Uuid
-  created_at      DateTime  @default(now())
-  updated_at      DateTime  @updatedAt
-  deleted_at      DateTime?
-
-  documents       Document[]
-  instruments     Instrument[]
-
-  @@map("projects")
-}
-
-model Instrument {
+// Master table: satu record per standar akreditasi (mis. "LAMEMBA", "IAPS 4.0")
+model InstrumentStandard {
   id          String    @id @default(uuid()) @db.Uuid
-  project_id  String    @db.Uuid
-  code        String    @db.VarChar(50)
-  name        String    @db.VarChar(300)
-  parent_id   String?   @db.Uuid
-  level       Int       @default(0) // 0=kriteria, 1=sub, 2=indikator
-  sort_order  Int       @default(0)
+  code        String    @unique @db.VarChar(50) // LAMEMBA, IAPS40
+  name        String    @db.VarChar(300)       // Lembaga Akreditasi Mandiri Ekonomi Manajemen Bisnis dan Akuntansi
   description String?   @db.Text
   created_at  DateTime  @default(now())
   updated_at  DateTime  @updatedAt
 
-  project     Project    @relation(fields: [project_id], references: [id], onDelete: Cascade)
-  parent      Instrument? @relation("InstrumentTree", fields: [parent_id], references: [id])
-  children    Instrument[] @relation("InstrumentTree")
-  documentCriteria DocumentCriteriaMapping[]
+  versions    InstrumentVersion[]
 
-  @@unique([project_id, code])
-  @@map("instruments")
+  @@map("instrument_standards")
+}
+
+// Versi per tahun/periode: "LAMEMBA 2025", "LAMEMBA 2026", dst.
+model InstrumentVersion {
+  id              String    @id @default(uuid()) @db.Uuid
+  standard_id     String    @db.Uuid
+  version_label   String    @db.VarChar(100) // "IAU 1.0 — 2025", "IAU 2.0 — 2026"
+  effective_date  DateTime  @db.Date          // tanggal berlaku
+  expired_date    DateTime? @db.Date          // tanggal kedaluwarsa (null = masih berlaku)
+  regulation_ref  String?   @db.VarChar(500)  // "PerBAN-PT No.23 Tahun 2024"
+  status          String    @default("ACTIVE") @db.VarChar(30) // ACTIVE, ARCHIVED
+  notes           String?   @db.Text
+  created_at      DateTime  @default(now())
+  updated_at      DateTime  @updatedAt
+
+  standard        InstrumentStandard @relation(fields: [standard_id], references: [id], onDelete: Cascade)
+  criteria        InstrumentCriterion[]
+  projects        Project[]
+  templates       DedStructureTemplate[]
+
+  @@unique([standard_id, version_label])
+  @@map("instrument_versions")
+}
+
+// Pohon Kriteria → Dimensi → Indikator (dinamis, dibaca dari DB, bukan hardcode)
+model InstrumentCriterion {
+  id                  String    @id @default(uuid()) @db.Uuid
+  version_id          String    @db.Uuid
+  parent_id           String?   @db.Uuid
+  code                String    @db.VarChar(50)   // "B.1", "B.1.a", "B.1.a.1"
+  name                String    @db.VarChar(500)
+  level               Int       @default(0)       // 0=kriteria, 1=dimensi, 2=indikator
+  sort_order          Int       @default(0)
+  cluster             String?   @db.VarChar(30)   // INPUT, PROSES, OUTPUT_OUTCOME
+  description         String?   @db.Text          // deskripsi narasi dari template DED
+  rubric_description  String?   @db.Text          // rubrik penilaian (syarat Unggul)
+  ai_instruction      String?   @db.Text          // instruksi khusus untuk Gemini AI
+  is_required_unggul  Boolean   @default(false)   // apakah wajib dipenuhi untuk status Unggul
+  created_at          DateTime  @default(now())
+  updated_at          DateTime  @updatedAt
+
+  version             InstrumentVersion   @relation(fields: [version_id], references: [id], onDelete: Cascade)
+  parent              InstrumentCriterion? @relation("CriterionTree", fields: [parent_id], references: [id])
+  children            InstrumentCriterion[] @relation("CriterionTree")
+  documentCriteria    DocumentCriteriaMapping[]
+
+  @@unique([version_id, code])
+  @@map("instrument_criteria")
+}
+
+model Project {
+  id                  String    @id @default(uuid()) @db.Uuid
+  name                String    @db.VarChar(200)
+  code                String    @unique @db.VarChar(50)
+  description         String?   @db.Text
+  program_studi       String    @db.VarChar(200)
+  jenjang             String    @db.VarChar(20) // S1, S2, S3, D3, D4
+  accreditation       String?   @db.VarChar(20) // Unggul, Baik Sekali, Baik
+  instrument_version_id String  @db.Uuid        // binding ke versi instrumen
+  status              String    @default("DRAFT") @db.VarChar(30) // DRAFT, ACTIVE, SUBMITTED, COMPLETED
+  deadline            DateTime?
+  created_by          String    @db.Uuid
+  created_at          DateTime  @default(now())
+  updated_at          DateTime  @updatedAt
+  deleted_at          DateTime?
+
+  instrumentVersion   InstrumentVersion @relation(fields: [instrument_version_id], references: [id])
+  documents           Document[]
+
+  @@map("projects")
 }
 
 // =============================================
@@ -188,7 +230,7 @@ model DocumentChunk {
   section_title   String?   @db.VarChar(500)
   token_count     Int       @default(0)
   char_count      Int       @default(0)
-  embedding       Unsupported("vector(768)")?
+  embedding       Unsupported("vector(3072)")?
   bm25_tokens     String[]  @db.Text
   metadata        Json?
   status          String    @default("INDEXED") @db.VarChar(30) // INDEXED, NEEDS_REVIEW, FAILED
@@ -210,8 +252,8 @@ model DocumentCriteriaMapping {
   assigned_by   String?   @db.Uuid // null = auto-detected
   created_at    DateTime  @default(now())
 
-  document      Document   @relation(fields: [document_id], references: [id], onDelete: Cascade)
-  instrument    Instrument @relation(fields: [instrument_id], references: [id], onDelete: Cascade)
+  document      Document            @relation(fields: [document_id], references: [id], onDelete: Cascade)
+  instrument    InstrumentCriterion @relation(fields: [instrument_id], references: [id], onDelete: Cascade)
 
   @@unique([document_id, instrument_id])
   @@map("document_criteria_mappings")
@@ -527,18 +569,20 @@ model AuditLog {
 
 model DedStructureTemplate {
   id                    String    @id @default(uuid()) @db.Uuid
-  instrument_version_id String    @db.Uuid // NOTE: Linking as string instead of relation since InstrumentVersion model might be absorbed in Instrument tree, depending on Phase 2 impl. If not defined, we'll leave as String.
+  instrument_version_id String    @db.Uuid
   parent_id             String?   @db.Uuid
   code                  String    @db.VarChar(100)
   title                 String    @db.VarChar(500)
-  section_type          String    @db.VarChar(50) // COVER, INTRO, CRITERION, APPENDIX, OTHER
+  section_type          String    @db.VarChar(50) // COVER, IDENTITY, INTRO, CRITERION, DIMENSION, APPENDIX, OTHER
   description           String?   @db.Text
-  criterion_mapping     String?   @db.VarChar(50)
+  criterion_mapping     String?   @db.VarChar(50) // maps to InstrumentCriterion.code
   display_order         Int
   is_required           Boolean   @default(true)
+  max_pages             Int?      // batas halaman (mis. BAB I maks 5 halaman)
   created_at            DateTime  @default(now())
   updated_at            DateTime  @updatedAt
 
+  instrumentVersion     InstrumentVersion      @relation(fields: [instrument_version_id], references: [id], onDelete: Cascade)
   parent                DedStructureTemplate?  @relation("DedTemplateTree", fields: [parent_id], references: [id])
   children              DedStructureTemplate[] @relation("DedTemplateTree")
 

@@ -1,0 +1,65 @@
+{
+  "instrument_name": "LAMEMBA",
+  "version_label": "Versi 2024",
+  "criteria": [
+    {
+      "number": 1,
+      "name": "Visi, Misi, Tujuan, dan Strategi",
+      "description": "Evaluasi terhadap orientasi strategis Unit Pengelola Program Studi (UPPS)",
+      "dimensions": [
+        {
+          "number": "1.1",
+          "name": "Kejelasan Visi dan Misi",
+          "description": "Visi dan Misi harus jelas, realistis, dan dipahami oleh pemangku kepentingan.",
+          "indicators": [
+            {
+              "number": "1.1.1",
+              "name": "Mekanisme Penyusunan Visi, Misi, Tujuan, dan Sasaran",
+              "description": "Keterlibatan pemangku kepentingan dalam penyusunan VMTS.",
+              "assessment_guide": "Nilai 4 jika penyusunan VMTS melibatkan seluruh pemangku kepentingan internal dan eksternal, dilengkapi bukti dokumen legal."
+            },
+            {
+              "number": "1.1.2",
+              "name": "Pemahaman Pemangku Kepentingan",
+              "description": "Tingkat pemahaman sivitas akademika terhadap VMTS.",
+              "assessment_guide": "Survei pemahaman VMTS menunjukkan hasil di atas 80%."
+            }
+          ]
+        },
+        {
+          "number": "1.2",
+          "name": "Strategi Pencapaian Sasaran",
+          "description": "Strategi pencapaian visi, misi, dan tujuan yang berkesinambungan.",
+          "indicators": [
+            {
+              "number": "1.2.1",
+              "name": "Rencana Strategis (Renstra)",
+              "description": "Keberadaan Renstra yang mencakup indikator kinerja.",
+              "assessment_guide": "Renstra mencakup milestone yang jelas dan terukur."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "number": 2,
+      "name": "Tata Pamong, Tata Kelola, dan Kerjasama",
+      "description": "Sistem tata pamong dan kelembagaan yang menjamin kredibilitas dan transparansi",
+      "dimensions": [
+        {
+          "number": "2.1",
+          "name": "Sistem Tata Pamong",
+          "description": "Sistem tata pamong yang berjalan secara efektif.",
+          "indicators": [
+            {
+              "number": "2.1.1",
+              "name": "Kelengkapan Struktur Organisasi",
+              "description": "Kelengkapan dan kejelasan wewenang dalam struktur organisasi.",
+              "assessment_guide": "Struktur organisasi memiliki job description yang jelas dan dievaluasi berkala."
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

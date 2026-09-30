@@ -1,4 +1,10 @@
 import express, { Request, Response, NextFunction } from 'express';
+
+// Patch for BigInt serialization in JSON.stringify (Prisma BigInt fields)
+(BigInt.prototype as any).toJSON = function () {
+  return Number(this);
+};
+
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import { env } from './config/env';
@@ -22,6 +28,10 @@ import settingsRoutes from './modules/system/settings.routes';
 import dedStructureRoutes from './modules/system/ded-structure.routes';
 
 export const app = express();
+
+// Serve uploads folder statically for View functionality
+import path from 'path';
+app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
 
 // Middleware
 app.use(requestId);

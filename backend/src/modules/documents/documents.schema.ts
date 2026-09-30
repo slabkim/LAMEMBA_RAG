@@ -2,10 +2,10 @@ import { z } from 'zod';
 
 export const uploadDocumentSchema = z.object({
   body: z.object({
-    name: z.string().min(1),
-    document_type: z.enum(['DED', 'DKPS', 'EVIDENCE', 'SUPPORTING']),
+    name: z.string().optional(),
+    document_type: z.enum(['DED', 'DKPS', 'EVIDENCE', 'SUPPORTING']).optional(),
     project_id: z.string().uuid(),
-    criteria_ids: z.array(z.string().uuid()).optional(),
+    criteria_ids: z.any().optional(),
     description: z.string().optional(),
   }),
 });

@@ -4,7 +4,7 @@ import { validate } from '../../middleware/validate';
 import { generateDedSchema, updateResponseSchema } from './ded.schema';
 import {
   getDedOverview, getDedSections, getSectionDetail, getSectionResponse,
-  generateDraft, getGenerationRun, updateResponse, submitResponse,
+  saveResponseBySection, generateDraft, getGenerationRun, updateResponse, submitResponse,
   getVersionHistory, getVersionDetail, compareVersions, getEvidenceRefs
 } from './ded.controller';
 
@@ -17,6 +17,7 @@ router.get('/projects/:projectId/ded/sections', authenticate, getDedSections);
 // Section routes
 router.get('/sections/:id', authenticate, getSectionDetail);
 router.get('/sections/:id/response', authenticate, getSectionResponse);
+router.post('/sections/:id/save', authenticate, saveResponseBySection);
 router.post('/sections/:id/generate', authenticate, validate(generateDedSchema), generateDraft);
 
 // Generation run

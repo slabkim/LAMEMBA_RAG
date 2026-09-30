@@ -8,7 +8,7 @@ export const getDedOverview = async (req: Request, res: Response, next: NextFunc
     const projectId = req.params.projectId as string;
 
     const sections = await prisma.dedSection.findMany({
-      where: { project_id: projectId, parent_id: null },
+      where: { project_id: projectId },
       orderBy: { sort_order: 'asc' },
       include: {
         children: {
@@ -34,6 +34,18 @@ export const getDedOverview = async (req: Request, res: Response, next: NextFunc
       }
     });
 
+    // Build hierarchy for Tree Component in Frontend
+    const buildTree = (items: any[], parentId: string | null = null): any[] => {
+      return items
+        .filter(item => item.parent_id === parentId)
+        .map(item => ({
+          ...item,
+          children: buildTree(items, item.id)
+        }));
+    };
+    
+    const hierarchicalSections = buildTree(sections);
+
     // Compute progress
     const allSections = await prisma.dedSection.findMany({
       where: { project_id: projectId, level: 2 }, // indicator level
@@ -45,7 +57,7 @@ export const getDedOverview = async (req: Request, res: Response, next: NextFunc
 
     res.json({
       data: {
-        sections,
+        sections: hierarchicalSections,
         progress: {
           total_indicators: total,
           approved,
@@ -92,7 +104,57 @@ export const getSectionDetail = async (req: Request, res: Response, next: NextFu
   } catch (error) { next(error); }
 };
 
-// GET /api/ded/sections/:id/response - Current response for section
+// POST /api/ded/sections/:id/save - Save or update response
+export const saveResponseBySection = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const sectionId = req.params.id as string;
+    const userId = (req as any).user?.id || 'system';
+    const { content } = req.body;
+
+    let response = await prisma.dedResponse.findFirst({
+      where: { section_id: sectionId },
+      orderBy: { version: 'desc' }
+    });
+
+    if (response) {
+      if (response.status === 'APPROVED') {
+        throw new AppError(409, 'INVALID_STATE_TRANSITION', 'Cannot edit approved response');
+      }
+      response = await prisma.dedResponse.update({
+        where: { id: response.id },
+        data: { content, updated_at: new Date() }
+      });
+    } else {
+      response = await prisma.dedResponse.create({
+        data: {
+          section_id: sectionId,
+          content,
+          status: 'DRAFT',
+          version: 1,
+          created_by: userId
+        }
+      });
+      await prisma.dedSection.update({
+        where: { id: sectionId },
+        data: { status: 'DRAFT' }
+      });
+    }
+
+    // Create version snapshot
+    await prisma.dedResponseVersion.create({
+      data: {
+        response_id: response.id,
+        version_no: response.version,
+        content,
+        status: response.status,
+        change_summary: 'Manual edit',
+        created_by: userId,
+      }
+    });
+
+    res.json({ data: response });
+  } catch (error) { next(error); }
+};
 export const getSectionResponse = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const sectionId = req.params.id as string;
@@ -110,6 +172,8 @@ export const getSectionResponse = async (req: Request, res: Response, next: Next
   } catch (error) { next(error); }
 };
 
+import { generateDedResponse } from './generation.service';
+
 // POST /api/ded/sections/:id/generate - Generate AI draft (stub for Phase 4)
 export const generateDraft = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -126,79 +190,20 @@ export const generateDraft = async (req: Request, res: Response, next: NextFunct
         section_id: sectionId,
         project_id: section.project_id,
         status: 'RUNNING',
-        model_name: 'gemini-1.5-pro',
+        model_name: 'gemini-1.5-flash',
         retrieval_method,
         top_k,
-        instruction,
+        instruction: instruction || '',
         created_by: userId,
       }
     });
 
-    // Phase 4 stub: In production, this dispatches to BullMQ job queue.
-    // The worker would: 1) semantic retrieval, 2) BM25 retrieval, 3) RRF fusion,
-    // 4) context assembly, 5) Gemini call, 6) output validation, 7) save response.
-
-    // For now, simulate with a stub response
-    const stubText = `[AI Generated Draft - Stub]\n\nNarasi DED untuk ${section.title} (${section.code}) akan dihasilkan oleh pipeline Hybrid RAG + Gemini.\n\nPipeline: Semantic Retrieval → BM25 → RRF Fusion → Context Assembly → Gemini Generation\nTop-K: ${top_k}\nMethod: ${retrieval_method}`;
-
-    // Update run as completed
-    await prisma.aiGenerationRun.update({
-      where: { id: run.id },
-      data: {
-        status: 'COMPLETED',
-        generated_text: stubText,
-        duration_ms: 1500,
-        completed_at: new Date(),
-        retrieved_chunks: JSON.parse('[]'),
-      }
+    // Fire and forget: jalankan RAG di background
+    generateDedResponse(run.id, sectionId, section.project_id, instruction || '', top_k).catch(err => {
+      console.error('Background Generation Error:', err);
     });
 
-    // Create/update DED response
-    const existingResponse = await prisma.dedResponse.findFirst({
-      where: { section_id: sectionId },
-      orderBy: { version: 'desc' }
-    });
-
-    const newVersion = existingResponse ? existingResponse.version + 1 : 1;
-
-    const response = await prisma.dedResponse.create({
-      data: {
-        section_id: sectionId,
-        content: stubText,
-        status: 'DRAFT',
-        version: newVersion,
-        is_ai_generated: true,
-        generation_run_id: run.id,
-        created_by: userId,
-      }
-    });
-
-    // Create version snapshot
-    await prisma.dedResponseVersion.create({
-      data: {
-        response_id: response.id,
-        version_no: newVersion,
-        content: stubText,
-        status: 'DRAFT',
-        change_summary: 'AI Generated Draft',
-        created_by: userId,
-      }
-    });
-
-    // Update section status
-    await prisma.dedSection.update({
-      where: { id: sectionId },
-      data: { status: 'DRAFT' }
-    });
-
-    res.status(202).json({
-      data: {
-        generation_run_id: run.id,
-        response_id: response.id,
-        status: 'COMPLETED',
-        message: 'Draft generated successfully (stub)'
-      }
-    });
+    res.json({ data: run, message: 'AI Generation started in background' });
   } catch (error) { next(error); }
 };
 
